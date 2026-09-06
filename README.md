@@ -5,6 +5,8 @@ prayer breaks in a recorded lecture — and exporting what's left as a single fi
 
 Built with SwiftUI and driven by `ffmpeg` under the hood. Apple Silicon only.
 
+**Repository:** https://github.com/ahmadarif-lab/video-trimmer
+
 ## Features
 
 - **Mark by dragging.** Drag across the timeline to mark a stretch for removal. Segments can be
@@ -49,6 +51,24 @@ certificate or Xcode project needed. Pass a path to install somewhere else:
 ./build.sh /Applications/VideoTrimmer.app
 ```
 
+## Package a DMG
+
+```sh
+./package-dmg.sh
+```
+
+Builds a fresh copy into `dist/` and writes `dist/VideoTrimmer.dmg`, a compressed disk image
+containing the app next to an `/Applications` shortcut to drag it onto.
+
+The app is only ad-hoc signed, not signed with a Developer ID or notarized. That is fine when the
+DMG is copied across directly, but macOS attaches a quarantine flag to anything downloaded through
+a browser, and Gatekeeper will then refuse to open it. On the receiving Mac, either right-click the
+app and choose **Open** once, or clear the flag:
+
+```sh
+xattr -dr com.apple.quarantine /Applications/VideoTrimmer.app
+```
+
 ## How the export works
 
 Rather than filtering the whole file in one pass, the app cuts each kept segment into its own
@@ -61,6 +81,14 @@ temporary file and then concatenates them with the concat demuxer:
 The more obvious approach — a single `filter_complex` with `trim` + `concat` — was tried first and
 produced output whose audio track stopped early while the video ran to full length. Cutting the
 segments separately avoids that failure entirely, and keeps audio and video in sync.
+
+## Developer
+
+Ahmad Arif — <ahmad.arif019@gmail.com>
+
+## License
+
+MIT — see [LICENSE](LICENSE).
 
 ## Project layout
 

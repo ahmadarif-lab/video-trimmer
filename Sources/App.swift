@@ -79,15 +79,10 @@ struct ContentView: View {
 
     private var header: some View {
         HStack(spacing: 10) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(LinearGradient(colors: [Theme.accent, Color(red: 0.61, green: 0.35, blue: 0.95)],
-                                         startPoint: .topLeading, endPoint: .bottomTrailing))
-                    .frame(width: 28, height: 28)
-                Image(systemName: "scissors")
-                    .foregroundColor(.white)
-                    .font(.system(size: 13, weight: .semibold))
-            }
+            Image(nsImage: NSApp.applicationIconImage)
+                .resizable()
+                .interpolation(.high)
+                .frame(width: 28, height: 28)
             Text("Video Trimmer")
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundColor(Theme.textPrimary)
@@ -387,10 +382,26 @@ struct ContentView: View {
                 Text(err).font(.system(size: 10)).foregroundColor(Theme.danger)
                     .fixedSize(horizontal: false, vertical: true)
             }
+
+            Divider().padding(.vertical, 2)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Video Trimmer \(appVersion)")
+                    .font(.system(size: 11, weight: .semibold))
+                Text("Ahmad Arif · ahmad.arif019@gmail.com")
+                    .font(.system(size: 10)).foregroundColor(Theme.textSecondary)
+                Link("github.com/ahmadarif-lab/video-trimmer",
+                     destination: URL(string: "https://github.com/ahmadarif-lab/video-trimmer")!)
+                    .font(.system(size: 10))
+            }
         }
         .padding(12)
         .frame(width: 290)
         .task { await brew.refreshStatus() }
+    }
+
+    private var appVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
     }
 
     private var addSegmentPopover: some View {

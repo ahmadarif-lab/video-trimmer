@@ -2,7 +2,9 @@
 
 # Build output
 build/
+dist/
 *.app/
+*.dmg
 *.o
 *.swiftmodule
 *.swiftdoc
