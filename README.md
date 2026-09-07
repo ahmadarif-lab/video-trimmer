@@ -10,6 +10,12 @@
   Native macOS, built with SwiftUI and powered by <code>ffmpeg</code>. Apple Silicon only.
 </p>
 
+<p align="center">
+  <a href="https://github.com/ahmadarif-lab/video-trimmer/releases/latest">
+    <img src="https://img.shields.io/github/v/release/ahmadarif-lab/video-trimmer?label=Download&style=flat-square&color=2f81f7" alt="Download the latest release">
+  </a>
+</p>
+
 ## Features
 
 - Drag across the filmstrip timeline to mark a stretch for removal; drag the handles to fine-tune.
