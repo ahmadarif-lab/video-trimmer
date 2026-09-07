@@ -57,13 +57,18 @@ Builds a fresh copy into `dist/` and writes `dist/VideoTrimmer.dmg`, containing 
 `/Applications` shortcut to drag it onto.
 
 The app is ad-hoc signed rather than signed with a Developer ID and notarized. Copied across
-directly that is fine, but macOS flags anything downloaded through a browser as quarantined and
-Gatekeeper will refuse to open it. On the receiving Mac, right-click the app and choose **Open**
-once, or clear the flag:
+directly that is fine, but macOS quarantines anything downloaded through a browser, and Gatekeeper
+then refuses to open it — *"Apple could not verify Video Trimmer is free of malware"*.
+
+Clear the flag on the receiving Mac:
 
 ```sh
 xattr -dr com.apple.quarantine /Applications/"Video Trimmer.app"
 ```
+
+Or open it once through **System Settings → Privacy & Security**, where an **Open Anyway** button
+appears after a blocked launch. Note that right-clicking the app and choosing **Open** no longer
+works: macOS 15 removed that bypass for apps without a Developer ID signature.
 
 ## Support
 
