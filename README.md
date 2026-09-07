@@ -37,12 +37,24 @@
 | `←` / `→` | Seek 10 seconds back / forward |
 | Pinch or `⌘`-scroll | Zoom the timeline |
 
+## Install
+
+```sh
+brew tap ahmadarif-lab/tap
+brew install --cask video-trimmer
+```
+
+This pulls `ffmpeg` in as a dependency and clears the quarantine flag, so the app opens without any
+Gatekeeper detour. Otherwise, grab the DMG from
+[Releases](https://github.com/ahmadarif-lab/video-trimmer/releases/latest) and see the note under
+[Package a DMG](#package-a-dmg) about clearing quarantine by hand.
+
 ## Requirements
 
 - macOS on Apple Silicon
-- Xcode command line tools, for `swiftc`
-- `ffmpeg` and `ffprobe` in `/opt/homebrew/bin` — `brew install ffmpeg`, or let the app install it
-  from its settings panel
+- `ffmpeg` and `ffprobe` in `/opt/homebrew/bin` — installed for you by the cask, or
+  `brew install ffmpeg`, or from the app's settings panel
+- Xcode command line tools, only if you build from source
 
 ## Build and run
 
