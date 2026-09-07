@@ -12,7 +12,7 @@ rm -rf "$DIST"
 mkdir -p "$DIST"
 
 # Build a fresh copy inside dist/ so the DMG never depends on what's in ~/Applications.
-APP="$DIST/VideoTrimmer.app"
+APP="$DIST/Video Trimmer.app"
 ./build.sh "$PWD/$APP"
 
 # Staging folder: the app plus a shortcut to /Applications for drag-to-install.

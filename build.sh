@@ -4,7 +4,8 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
-APP="${1:-$HOME/Applications/VideoTrimmer.app}"
+# The bundle filename is what the Dock and Finder show, so it carries the space.
+APP="${1:-$HOME/Applications/Video Trimmer.app}"
 BIN="$APP/Contents/MacOS/VideoTrimmer"
 
 echo "Building $APP"

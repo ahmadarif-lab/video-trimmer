@@ -4,6 +4,13 @@ import AVKit
 import AVFoundation
 import UniformTypeIdentifiers
 
+/// Shared so both the Help menu command and the header button open the same sheet.
+@MainActor
+final class ShortcutsPresenter: ObservableObject {
+    static let shared = ShortcutsPresenter()
+    @Published var isPresented = false
+}
+
 struct ResolutionOption: Identifiable {
     var id: Int { height ?? -1 }
     let height: Int?
@@ -17,6 +24,7 @@ struct ContentView: View {
     @StateObject private var playerModel = PlayerModel()
     @StateObject private var brew = BrewManager()
     @StateObject private var input = InputMonitor()
+    @ObservedObject private var shortcuts = ShortcutsPresenter.shared
 
     @State private var inputPath: String = ""
     @State private var duration: Double = 0
@@ -88,6 +96,13 @@ struct ContentView: View {
                 .foregroundColor(Theme.textPrimary)
 
             Spacer()
+
+            Button(action: { shortcuts.isPresented.toggle() }) {
+                Image(systemName: "questionmark")
+            }
+            .buttonStyle(IconButtonStyle())
+            .popover(isPresented: $shortcuts.isPresented) { shortcutsPopover }
+            .help("Keyboard shortcuts (⌘/)")
 
             Button(action: { showSettings.toggle() }) {
                 Image(systemName: "gearshape")
@@ -393,6 +408,11 @@ struct ContentView: View {
                 Link("github.com/ahmadarif-lab/video-trimmer",
                      destination: URL(string: "https://github.com/ahmadarif-lab/video-trimmer")!)
                     .font(.system(size: 10))
+                Text("Free to use — if it helps you, please pray that Allah grants me and my family Paradise.")
+                    .font(.system(size: 10))
+                    .foregroundColor(Theme.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 2)
             }
         }
         .padding(12)
@@ -434,6 +454,50 @@ struct ContentView: View {
         }
         .padding(12)
         .frame(width: 210)
+    }
+
+    private var shortcutsPopover: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Shortcuts").font(.system(size: 12, weight: .semibold))
+
+            shortcutSection("Playback", [
+                ("Space", "Play / pause"),
+                ("←  →", "Seek 10 seconds")
+            ])
+
+            Divider().padding(.vertical, 2)
+
+            shortcutSection("Timeline", [
+                ("Drag", "Mark a stretch to remove"),
+                ("Drag edges", "Resize a segment"),
+                ("Pinch", "Zoom in / out"),
+                ("⌘ scroll", "Zoom in / out"),
+                ("Scroll", "Pan when zoomed in")
+            ])
+        }
+        .padding(12)
+        .frame(width: 290)
+    }
+
+    private func shortcutSection(_ title: String, _ rows: [(String, String)]) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(Theme.textSecondary)
+            ForEach(rows, id: \.0) { keys, action in
+                HStack(spacing: 10) {
+                    Text(keys)
+                        .font(.system(size: 10, weight: .medium))
+                        .padding(.horizontal, 7).padding(.vertical, 3)
+                        .background(RoundedRectangle(cornerRadius: 5).fill(Theme.control))
+                        .frame(width: 82, alignment: .center)
+                    Text(action)
+                        .font(.system(size: 11))
+                        .foregroundColor(Theme.textPrimary)
+                    Spacer()
+                }
+            }
+        }
     }
 
     private var exportSheet: some View {
@@ -748,5 +812,13 @@ struct VideoTrimmerApp: App {
             ContentView()
         }
         .windowResizability(.contentSize)
+        .commands {
+            CommandGroup(replacing: .help) {
+                Button("Video Trimmer Shortcuts") {
+                    ShortcutsPresenter.shared.isPresented = true
+                }
+                .keyboardShortcut("/", modifiers: .command)
+            }
+        }
     }
 }
