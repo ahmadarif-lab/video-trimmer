@@ -16,6 +16,17 @@
   </a>
 </p>
 
+## Screenshots
+
+<p align="center">
+  <img src="Resources/screenshots/main-window.jpg" width="49%" alt="Timeline with removed segments marked">
+  <img src="Resources/screenshots/export-options.jpg" width="49%" alt="Export dialog with resolution choices">
+</p>
+<p align="center">
+  <img src="Resources/screenshots/export-progress.jpg" width="49%" alt="Export progress overlay">
+  <img src="Resources/screenshots/export-done.jpg" width="49%" alt="Export complete dialog">
+</p>
+
 ## Features
 
 - Drag across the filmstrip timeline to mark a stretch for removal; drag the handles to fine-tune.
