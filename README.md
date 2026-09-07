@@ -12,7 +12,7 @@
 
 <p align="center">
   <a href="https://github.com/ahmadarif-lab/video-trimmer/releases/latest">
-    <img src="https://img.shields.io/github/v/release/ahmadarif-lab/video-trimmer?label=Download&style=flat-square&color=2f81f7" alt="Download the latest release">
+    <img src="https://img.shields.io/github/v/release/ahmadarif-lab/video-trimmer?label=Download&style=flat-square&color=2f81f7&cacheSeconds=300" alt="Download the latest release">
   </a>
 </p>
 
