@@ -1,9 +1,14 @@
-# Video Trimmer
+<p align="center">
+  <img src="Resources/AppIcon.png" width="128" alt="Video Trimmer icon">
+</p>
 
-A native macOS app for cutting unwanted stretches out of a video — ad breaks, dead air, pauses in a
-recorded lecture — and exporting what's left as a single file.
+<h1 align="center">Video Trimmer</h1>
 
-Built with SwiftUI, powered by `ffmpeg`. Apple Silicon only.
+<p align="center">
+  Cut unwanted stretches out of a video — ad breaks, dead air, pauses in a recorded lecture —
+  and export what's left as a single file.<br>
+  Native macOS, built with SwiftUI and powered by <code>ffmpeg</code>. Apple Silicon only.
+</p>
 
 ## Features
 
