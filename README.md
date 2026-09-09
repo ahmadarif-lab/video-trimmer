@@ -19,11 +19,17 @@
 ## Screenshots
 
 <p align="center">
-  <img src="Resources/screenshots/main-window.jpg" width="49%" alt="Timeline with removed segments marked">
-  <img src="Resources/screenshots/export-options.jpg" width="49%" alt="Export dialog with resolution choices">
+  <img src="Resources/screenshots/main-window.jpg" width="49%" alt="Remove Marked mode, with three marked stretches shown in red">
+  <img src="Resources/screenshots/keep-mode.jpg" width="49%" alt="Keep Marked mode, with the same three stretches shown in green">
+</p>
+
+<p align="center"><em>The same three marks read both ways — red is cut out, green is what survives.</em></p>
+
+<p align="center">
+  <img src="Resources/screenshots/export-options.jpg" width="49%" alt="Export dialog with resolution choices and the split toggle">
+  <img src="Resources/screenshots/export-progress.jpg" width="49%" alt="Export progress overlay">
 </p>
 <p align="center">
-  <img src="Resources/screenshots/export-progress.jpg" width="49%" alt="Export progress overlay">
   <img src="Resources/screenshots/export-done.jpg" width="49%" alt="Export complete dialog">
 </p>
 
