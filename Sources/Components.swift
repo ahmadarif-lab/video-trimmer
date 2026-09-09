@@ -37,13 +37,15 @@ struct SegmentCard: View {
     let range: CutRange
     let thumbnail: NSImage?
     let isSelected: Bool
+    /// Red when the marked range is cut out, green when it is the part being kept.
+    let tint: Color
     let onSelect: () -> Void
     let onDelete: () -> Void
 
     var body: some View {
         HStack(spacing: 8) {
             ZStack {
-                Circle().fill(Theme.danger).frame(width: 18, height: 18)
+                Circle().fill(tint).frame(width: 18, height: 18)
                 Text("\(index)").font(.system(size: 10, weight: .bold)).foregroundColor(.white)
             }
             Group {
@@ -72,7 +74,7 @@ struct SegmentCard: View {
         .padding(.vertical, 6)
         .background(
             RoundedRectangle(cornerRadius: 7)
-                .fill(isSelected ? Theme.danger.opacity(0.20) : Theme.panelRaised)
+                .fill(isSelected ? tint.opacity(0.20) : Theme.panelRaised)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 7)
@@ -93,6 +95,7 @@ struct TimelineSegmentOverlay: View {
     let pixelsPerSecond: CGFloat
     let trackHeight: CGFloat
     let isSelected: Bool
+    let tint: Color
     let coordinateSpace: String
     let onSelect: () -> Void
     let onDelete: () -> Void
@@ -130,10 +133,10 @@ struct TimelineSegmentOverlay: View {
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 4)
-                .fill(Theme.danger.opacity(0.30))
+                .fill(tint.opacity(0.30))
                 .overlay(
                     RoundedRectangle(cornerRadius: 4)
-                        .stroke(isSelected ? Theme.accent : Theme.danger.opacity(0.7), lineWidth: isSelected ? 2 : 1)
+                        .stroke(isSelected ? Theme.accent : tint.opacity(0.7), lineWidth: isSelected ? 2 : 1)
                 )
                 .contentShape(Rectangle())
                 .onTapGesture { onSelect() }
@@ -144,7 +147,7 @@ struct TimelineSegmentOverlay: View {
                     .font(.system(size: 9))
                     .foregroundColor(.white)
                     .padding(4)
-                    .background(Circle().fill(Theme.danger))
+                    .background(Circle().fill(tint))
             }
             .buttonStyle(.plain)
 
@@ -160,7 +163,7 @@ struct TimelineSegmentOverlay: View {
 
     private var handleView: some View {
         RoundedRectangle(cornerRadius: 3)
-            .fill(Theme.danger)
+            .fill(tint)
             .frame(width: 8, height: trackHeight * 0.62)
             .overlay(
                 Rectangle().fill(Color.white.opacity(0.8)).frame(width: 2, height: trackHeight * 0.28)
@@ -225,6 +228,7 @@ struct TimelineView: View {
     @Binding var selectedRangeID: UUID?
     let duration: Double
     let thumbnails: [NSImage]
+    let tint: Color
     @Binding var zoomScale: CGFloat
 
     @State private var dragSelectStart: Double? = nil
@@ -302,6 +306,7 @@ struct TimelineView: View {
                             pixelsPerSecond: pxPerSec,
                             trackHeight: filmstripHeight,
                             isSelected: selectedRangeID == range.id,
+                            tint: tint,
                             coordinateSpace: timelineSpace,
                             onSelect: { selectedRangeID = range.id },
                             onDelete: { deleteRange(range.id) },

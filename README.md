@@ -29,8 +29,13 @@
 
 ## Features
 
-- Drag across the filmstrip timeline to mark a stretch for removal; drag the handles to fine-tune.
-  Segments clamp against their neighbours, so they never overlap.
+- Drag across the filmstrip timeline to mark a stretch; drag the handles to fine-tune. Segments
+  clamp against their neighbours, so they never overlap.
+- Two ways to read those marks: **Remove Marked** drops them and keeps the rest, **Keep Marked**
+  does the opposite and exports only what you marked. The same marks work either way — flip the
+  switch to invert the result.
+- **Split into separate files** turns each resulting stretch into its own video: mark three parts
+  in Keep mode and you get three files, rather than one joined export.
 - Timeline built from real thumbnails, with a ruler, playhead, and zoom.
 - Export at the original resolution or downscale to 1080p / 720p / 480p, each showing an estimated
   output size.

@@ -88,21 +88,47 @@ func formatFileSize(_ bytes: Int64) -> String {
     return String(format: "%.0f MB", mb)
 }
 
-func computeKeepSegments(duration: Double, cutRanges: [(Double, Double)]) -> [(Double, Double)] {
-    let clamped = cutRanges
+/// What the marked ranges mean: the stretches to drop, or the only stretches to keep.
+enum MarkMode: String, CaseIterable, Identifiable {
+    case remove
+    case keep
+
+    var id: String { rawValue }
+    var title: String { self == .remove ? "Remove" : "Keep" }
+    var panelTitle: String { self == .remove ? "Segments to Remove" : "Segments to Keep" }
+    var emptyHint: String {
+        self == .remove
+            ? "Drag across the timeline to mark a part to remove."
+            : "Drag across the timeline to mark a part to keep."
+    }
+    var dragHint: String {
+        self == .remove ? "Mark a stretch to remove" : "Mark a stretch to keep"
+    }
+}
+
+/// Clamps ranges to the video, drops empty ones, sorts them, and merges the ones that collide.
+/// `mergeTouching` also folds ranges that only meet at a point — right when cutting (removing
+/// 0–10 and 10–20 is a single cut), wrong when keeping, where those are two deliberate clips.
+func normalizeRanges(duration: Double, ranges: [(Double, Double)], mergeTouching: Bool) -> [(Double, Double)] {
+    let clamped = ranges
         .map { (max(0, min($0.0, duration)), max(0, min($0.1, duration))) }
         .filter { $0.1 > $0.0 }
         .sorted { $0.0 < $1.0 }
 
     var merged: [(Double, Double)] = []
     for r in clamped {
-        if let last = merged.last, r.0 <= last.1 {
+        if let last = merged.last, mergeTouching ? r.0 <= last.1 : r.0 < last.1 {
             merged[merged.count - 1] = (last.0, max(last.1, r.1))
         } else {
             merged.append(r)
         }
     }
+    return merged
+}
 
+/// The complement of the marked ranges — everything the user did *not* mark for removal.
+func computeKeepSegments(duration: Double, cutRanges: [(Double, Double)]) -> [(Double, Double)] {
+    let merged = normalizeRanges(duration: duration, ranges: cutRanges, mergeTouching: true)
     var keep: [(Double, Double)] = []
     var cursor: Double = 0
     for r in merged {
@@ -111,4 +137,13 @@ func computeKeepSegments(duration: Double, cutRanges: [(Double, Double)]) -> [(D
     }
     if cursor < duration { keep.append((cursor, duration)) }
     return keep
+}
+
+/// The stretches that actually end up in the export, in play order: one file each when the
+/// export is split, otherwise concatenated into a single file.
+func computeExportSegments(duration: Double, ranges: [(Double, Double)], mode: MarkMode) -> [(Double, Double)] {
+    switch mode {
+    case .remove: return computeKeepSegments(duration: duration, cutRanges: ranges)
+    case .keep: return normalizeRanges(duration: duration, ranges: ranges, mergeTouching: false)
+    }
 }

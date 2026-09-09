@@ -50,14 +50,24 @@ the bundle by hand. Notes:
 
 ## How the export pipeline works
 
-`TrimEngine.runPipeline` converts the ranges the user marked for removal into their complement (the
-stretches to keep) and then:
+`TrimEngine.runPipeline` first turns the marked ranges into the stretches to export, via
+`computeExportSegments`. In `.remove` mode that is their complement; in `.keep` mode the marked
+ranges *are* the export. From there:
 
 1. Cuts each kept stretch to its own temp file with `-ss`/`-to`, encoding with
    `h264_videotoolbox`. If a smaller resolution was chosen, `scale=-2:<height>` is applied **here**,
    which keeps a downscaled export to a single pass.
 2. Concatenates the temp files through the concat demuxer with `-c copy`, so the join is a remux
    rather than a re-encode and takes about a second.
+
+With `splitOutputs` on, step 1 writes straight to the final `<name> (part N).mp4` files next to the
+source and step 2 is skipped entirely — so a split export is strictly cheaper than a joined one, not
+more expensive. Because those files land outside the temp directory, cleanup is the pipeline's job:
+`inFlightOutput` holds only the clip currently being encoded, and `discardInFlightOutput` deletes
+that one on cancel or failure. Clips that already finished are deliberately kept and stay listed in
+`outputPaths` — throwing away eight good clips because the ninth was cancelled is worse than leaving
+them — which is why `wasCancelled` exists: without it the overlay would read a half-done split as a
+success.
 
 **Do not replace this with a single `filter_complex` doing `trim` + `concat`.** That was the
 original implementation and it silently produced files whose audio track stopped early — video ran
@@ -68,6 +78,18 @@ Progress comes from `-progress pipe:1 -nostats`, parsing the `out_time=` lines a
 against the total kept duration.
 
 ## Gotchas worth remembering
+
+- **Exports never overwrite.** `availableOutputPaths` claims the destination names before any
+  encoding starts, appending `" (1)"`, `" (2)"`, … past anything already on disk. A split export is
+  versioned as a *set* — all parts share one suffix — so a second three-clip run lands as
+  `(part 1) (1)`, `(part 2) (1)`, `(part 3) (1)` instead of a batch whose numbering depends on which
+  of its files happened to survive from an earlier run. `-y` stays on the ffmpeg calls only for the
+  temp segment files.
+
+- **Touching ranges merge only when removing.** `normalizeRanges` takes a `mergeTouching` flag.
+  Cutting 0–10 and 10–20 is one cut, so those fold together. *Keeping* 0–10 and 10–20 is two
+  deliberate clips, and folding them would silently turn a two-file split into one file — so keep
+  mode merges on real overlap only.
 
 - **Drag gestures need an absolute coordinate space.** Timeline segments are dragged and resized
   using `DragGesture(coordinateSpace: .named("timeline"))` and `value.location`, never

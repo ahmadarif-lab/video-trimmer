@@ -40,6 +40,8 @@ struct ContentView: View {
     @State private var showExportSheet = false
     @State private var showProgressOverlay = false
     @State private var selectedHeight: Int? = nil
+    @State private var markMode: MarkMode = .remove
+    @State private var splitOutputs = false
     @State private var addStartText = ""
     @State private var addEndText = ""
     @State private var addError: String?
@@ -242,7 +244,7 @@ struct ContentView: View {
     private var segmentsPanel: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("Segments to Remove")
+                Text(markMode.panelTitle)
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundColor(Theme.textSecondary)
                 Spacer()
@@ -253,11 +255,20 @@ struct ContentView: View {
                     .background(Capsule().fill(Theme.panelRaised))
             }
 
+            // The marks stay put when the mode flips — only what they mean changes.
+            Picker("", selection: $markMode) {
+                Text("Remove Marked").tag(MarkMode.remove)
+                Text("Keep Marked").tag(MarkMode.keep)
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .controlSize(.small)
+
             if ranges.isEmpty {
                 VStack(spacing: 6) {
                     Image(systemName: "rectangle.dashed")
                         .font(.system(size: 20)).foregroundColor(Theme.textSecondary.opacity(0.6))
-                    Text("Drag across the timeline to mark a part to remove.")
+                    Text(markMode.emptyHint)
                         .font(.system(size: 11))
                         .foregroundColor(Theme.textSecondary)
                         .multilineTextAlignment(.center)
@@ -273,6 +284,7 @@ struct ContentView: View {
                                 range: range,
                                 thumbnail: thumbnailNear(range.start),
                                 isSelected: selectedRangeID == range.id,
+                                tint: markTint,
                                 onSelect: {
                                     selectedRangeID = range.id
                                     playerModel.seek(to: range.start)
@@ -339,7 +351,7 @@ struct ContentView: View {
             }
 
             TimelineView(playerModel: playerModel, ranges: $ranges, selectedRangeID: $selectedRangeID,
-                         duration: duration, thumbnails: thumbnails, zoomScale: $zoomScale)
+                         duration: duration, thumbnails: thumbnails, tint: markTint, zoomScale: $zoomScale)
                 .frame(height: 81)
         }
         .panel()
@@ -468,7 +480,7 @@ struct ContentView: View {
             Divider().padding(.vertical, 2)
 
             shortcutSection("Timeline", [
-                ("Drag", "Mark a stretch to remove"),
+                ("Drag", markMode.dragHint),
                 ("Drag edges", "Resize a segment"),
                 ("Pinch", "Zoom in / out"),
                 ("⌘ scroll", "Zoom in / out"),
@@ -504,7 +516,7 @@ struct ContentView: View {
         VStack(alignment: .leading, spacing: 14) {
             VStack(alignment: .leading, spacing: 3) {
                 Text("Export Video").font(.system(size: 15, weight: .semibold))
-                Text("\(formatClock(keepTotalEstimate)) after removing \(ranges.count) segment\(ranges.count == 1 ? "" : "s")")
+                Text(exportSummary)
                     .font(.system(size: 11)).foregroundColor(Theme.textSecondary)
             }
 
@@ -538,6 +550,18 @@ struct ContentView: View {
                     .buttonStyle(.plain)
                 }
             }
+
+            Toggle(isOn: $splitOutputs) {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Split into separate files")
+                        .font(.system(size: 12, weight: .medium)).foregroundColor(Theme.textPrimary)
+                    Text(splitDetail)
+                        .font(.system(size: 10)).foregroundColor(Theme.textSecondary)
+                }
+            }
+            .toggleStyle(.switch)
+            .padding(.horizontal, 10).padding(.vertical, 8)
+            .background(RoundedRectangle(cornerRadius: 7).fill(Theme.panelRaised))
 
             HStack {
                 Spacer()
@@ -614,9 +638,11 @@ struct ContentView: View {
                         .buttonStyle(ToolbarButtonStyle())
                 } else {
                     HStack(spacing: 8) {
-                        if let path = engine.outputPaths.first {
+                        if !engine.outputPaths.isEmpty {
                             Button("Show in Finder") {
-                                NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: path)])
+                                NSWorkspace.shared.activateFileViewerSelecting(
+                                    engine.outputPaths.map { URL(fileURLWithPath: $0) }
+                                )
                             }
                             .buttonStyle(ToolbarButtonStyle())
                         }
@@ -639,7 +665,7 @@ struct ContentView: View {
     }
 
     private var exportSucceeded: Bool {
-        !engine.isRunning && engine.errorMessage == nil && !engine.outputPaths.isEmpty
+        !engine.isRunning && engine.errorMessage == nil && !engine.wasCancelled && !engine.outputPaths.isEmpty
     }
 
     private var progressTint: Color {
@@ -651,12 +677,29 @@ struct ContentView: View {
         !inputPath.isEmpty && !engine.isRunning && !ranges.isEmpty && duration > 0
     }
 
-    private var keepTotalEstimate: Double {
-        guard duration > 0 else { return 0 }
-        let cuts = ranges.map { ($0.start, $0.end) }
-        guard !cuts.isEmpty else { return duration }
-        let keep = computeKeepSegments(duration: duration, cutRanges: cuts)
-        return keep.reduce(0) { $0 + ($1.1 - $1.0) }
+    private var markTint: Color {
+        markMode == .remove ? Theme.danger : Theme.success
+    }
+
+    /// The stretches the current marks would export — one file each when split is on.
+    private var exportSegments: [(Double, Double)] {
+        guard duration > 0 else { return [] }
+        return computeExportSegments(duration: duration, ranges: ranges.map { ($0.start, $0.end) }, mode: markMode)
+    }
+
+    private var exportTotalEstimate: Double {
+        exportSegments.reduce(0) { $0 + ($1.1 - $1.0) }
+    }
+
+    private var exportSummary: String {
+        let time = formatClock(exportTotalEstimate)
+        let marks = "\(ranges.count) segment\(ranges.count == 1 ? "" : "s")"
+        let base = markMode == .remove
+            ? "\(time) after removing \(marks)"
+            : "\(time) from \(marks) marked"
+        guard splitOutputs else { return base }
+        let n = exportSegments.count
+        return "\(base) · \(n) file\(n == 1 ? "" : "s")"
     }
 
     private var resolutionOptions: [ResolutionOption] {
@@ -684,8 +727,16 @@ struct ContentView: View {
     private func estimatedSize(forHeight height: Int?) -> String {
         let video = estimatedBitrateKbps(forHeight: height)
         guard video > 0 else { return "—" }
-        let mb = keepTotalEstimate * (video + 128) * 1000 / 8 / 1_048_576
+        let mb = exportTotalEstimate * (video + 128) * 1000 / 8 / 1_048_576
         return "~\(Int(mb)) MB"
+    }
+
+    private var splitDetail: String {
+        let n = exportSegments.count
+        let source = markMode == .remove ? "unmarked" : "marked"
+        return splitOutputs
+            ? "\(n) file\(n == 1 ? "" : "s") — one per \(source) segment"
+            : "Everything is joined into one file"
     }
 
     private func thumbnailNear(_ time: Double) -> NSImage? {
@@ -745,9 +796,10 @@ struct ContentView: View {
     private func startExport() {
         showExportSheet = false
         guard canExport else { return }
-        let cuts = ranges.map { ($0.start, $0.end) }
         showProgressOverlay = true
-        engine.start(inputPath: inputPath, duration: duration, cutRanges: cuts, targetHeight: selectedHeight)
+        engine.start(inputPath: inputPath, duration: duration,
+                     ranges: ranges.map { ($0.start, $0.end) },
+                     mode: markMode, splitOutputs: splitOutputs, targetHeight: selectedHeight)
     }
 
     private func pickFile() {
