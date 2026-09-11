@@ -55,7 +55,8 @@ final class Updater: ObservableObject {
     func check() async -> Bool {
         guard !isChecking, !isUpdating else { return false }
         isChecking = true
-        defer { isChecking = false }
+        let started = ContinuousClock.now
+        let succeeded: Bool
         do {
             var request = URLRequest(url: Self.latestReleaseAPI)
             request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
@@ -70,11 +71,15 @@ final class Updater: ObservableObject {
             )
             lastChecked = Date()
             checkFailed = false
-            return true
+            succeeded = true
         } catch {
             checkFailed = true
-            return false
+            succeeded = false
         }
+        // GitHub often answers in under a tenth of a second, which would only flash the spinner.
+        try? await Task.sleep(until: started + .milliseconds(800))
+        isChecking = false
+        return succeeded
     }
 
     /// A Homebrew install is upgraded in place; any other copy — a DMG dragged over by hand, a

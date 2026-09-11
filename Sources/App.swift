@@ -384,10 +384,7 @@ struct ContentView: View {
                     .font(.system(size: 11)).foregroundColor(Theme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             } else if brew.isBusy {
-                HStack(spacing: 8) {
-                    ProgressView().controlSize(.small)
-                    Text(brew.busyLabel).font(.system(size: 11))
-                }
+                busyRow(brew.busyLabel)
                 ScrollView {
                     Text(brew.logText)
                         .font(.system(size: 9, design: .monospaced))
@@ -460,7 +457,11 @@ struct ContentView: View {
             }
         }
 
-        if updater.installedVersion != nil {
+        // While busy the button gives way to a spinner and what's running, as in the ffmpeg section.
+        // A periodic check never hides Install Update: its spinner only replaces Check for Updates.
+        if let step = updater.progressText {
+            busyRow(step)
+        } else if updater.installedVersion != nil {
             Button("Relaunch to Finish") { updater.relaunch() }
                 .buttonStyle(ToolbarButtonStyle(prominent: true))
         } else if let release = updater.availableUpdate {
@@ -469,19 +470,13 @@ struct ContentView: View {
                     Task { await updater.update() }
                 }
                 .buttonStyle(ToolbarButtonStyle(prominent: true))
-                .disabled(updater.isUpdating)
-                .opacity(updater.isUpdating ? 0.5 : 1)
-
-                if updater.isUpdating {
-                    ProgressView().controlSize(.small)
-                } else {
-                    Link("What's new", destination: release.pageURL).font(.system(size: 11))
-                }
+                Link("What's new", destination: release.pageURL).font(.system(size: 11))
             }
+        } else if updater.isChecking {
+            busyRow("Checking for updates...")
         } else {
             Button("Check for Updates") { Task { await updater.check() } }
-                .buttonStyle(ToolbarButtonStyle(disabled: updater.isChecking))
-                .disabled(updater.isChecking)
+                .buttonStyle(ToolbarButtonStyle())
         }
 
         if let err = updater.errorMessage {
@@ -490,13 +485,22 @@ struct ContentView: View {
         }
     }
 
+    /// The trailing status. Busy states have the spinner row instead.
     private var updateStatus: (text: String, tint: Color)? {
-        if let step = updater.progressText { return (step, Theme.textSecondary) }
         if let installed = updater.installedVersion { return ("v\(installed) installed", Theme.success) }
         if let release = updater.availableUpdate { return ("v\(release.version) available", Theme.accent) }
-        if updater.isChecking { return ("Checking...", Theme.textSecondary) }
+        if updater.isChecking { return nil }
         if updater.checkFailed { return ("Couldn't check", Theme.textSecondary) }
         return updater.lastChecked == nil ? nil : ("Up to date", Theme.textSecondary)
+    }
+
+    /// A spinner and what's running — shared by the app update and ffmpeg sections, so both read
+    /// the same while busy.
+    private func busyRow(_ label: String) -> some View {
+        HStack(spacing: 8) {
+            ProgressView().controlSize(.small)
+            Text(label).font(.system(size: 11))
+        }
     }
 
     private var addSegmentPopover: some View {
