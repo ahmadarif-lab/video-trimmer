@@ -11,10 +11,59 @@
 </p>
 
 <p align="center">
+  <a href="#install">
+    <img src="https://img.shields.io/badge/Install-Homebrew-FBB040?style=flat-square&logo=homebrew&logoColor=white" alt="Install with Homebrew">
+  </a>
   <a href="https://github.com/ahmadarif-lab/video-trimmer/releases/latest">
     <img src="https://img.shields.io/github/v/release/ahmadarif-lab/video-trimmer?label=Download&style=flat-square&color=2f81f7&cacheSeconds=300" alt="Download the latest release">
   </a>
 </p>
+
+## Install
+
+> [!TIP]
+> **Homebrew is the easiest way — one command, nothing else to set up:**
+>
+> ```sh
+> brew install --cask ahmadarif-lab/tap/video-trimmer
+> ```
+>
+> It adds the `ahmadarif-lab/tap` tap, installs `ffmpeg` alongside the app, and clears the
+> quarantine flag, so Video Trimmer opens straight away — no Gatekeeper warning to click through.
+
+### Updating
+
+Video Trimmer checks for a new release when it launches and every six hours after that, and puts a
+blue dot on the gear button when one is out. Open that panel and click **Install Update**: a
+Homebrew install is upgraded in place, then **Relaunch to Finish** switches to the new version. A
+copy installed from the DMG shows **Download Update** instead, which opens the release page.
+
+Or from the terminal:
+
+```sh
+brew upgrade --cask video-trimmer
+```
+
+### Manual install (DMG)
+
+Download `VideoTrimmer.dmg` from
+[Releases](https://github.com/ahmadarif-lab/video-trimmer/releases/latest) and drag the app onto the
+`Applications` shortcut beside it. The Homebrew install handles two more steps for you; here you do
+them by hand:
+
+1. **Clear the quarantine flag.** The app is ad-hoc signed rather than signed with a Developer ID
+   and notarized, so macOS quarantines a copy downloaded through a browser, and Gatekeeper then
+   refuses to open it — *"Apple could not verify Video Trimmer is free of malware"*:
+
+   ```sh
+   xattr -dr com.apple.quarantine /Applications/"Video Trimmer.app"
+   ```
+
+   Or open it once through **System Settings → Privacy & Security**, where an **Open Anyway**
+   button appears after a blocked launch. Right-clicking the app and choosing **Open** no longer
+   works: macOS 15 removed that bypass for apps without a Developer ID signature.
+
+2. **Install `ffmpeg`** with `brew install ffmpeg`, or from the app's settings panel.
 
 ## Screenshots
 
@@ -47,6 +96,7 @@
   output size.
 - Live progress with stage, ETA, and cancel.
 - Hardware encoding through VideoToolbox — typically around 7× realtime on Apple Silicon.
+- Keeps itself up to date: checks for new releases, and a Homebrew install updates in place.
 - Manages its own `ffmpeg` dependency: check the version, install it, or update it from the
   settings panel.
 - Drop a video from Finder anywhere on the window to open it.
@@ -59,21 +109,9 @@
 | `←` / `→` | Seek 10 seconds back / forward |
 | Pinch or `⌘`-scroll | Zoom the timeline |
 
-## Install
-
-```sh
-brew tap ahmadarif-lab/tap
-brew install --cask video-trimmer
-```
-
-This pulls `ffmpeg` in as a dependency and clears the quarantine flag, so the app opens without any
-Gatekeeper detour. Otherwise, grab the DMG from
-[Releases](https://github.com/ahmadarif-lab/video-trimmer/releases/latest) and see the note under
-[Package a DMG](#package-a-dmg) about clearing quarantine by hand.
-
 ## Requirements
 
-- macOS on Apple Silicon
+- macOS 14 (Sonoma) or later, on Apple Silicon
 - `ffmpeg` and `ffprobe` in `/opt/homebrew/bin` — installed for you by the cask, or
   `brew install ffmpeg`, or from the app's settings panel
 - Xcode command line tools, only if you build from source
@@ -99,21 +137,9 @@ or developer certificate involved. Pass a path to install elsewhere:
 ```
 
 Builds a fresh copy into `dist/` and writes `dist/VideoTrimmer.dmg`, containing the app beside an
-`/Applications` shortcut to drag it onto.
-
-The app is ad-hoc signed rather than signed with a Developer ID and notarized. Copied across
-directly that is fine, but macOS quarantines anything downloaded through a browser, and Gatekeeper
-then refuses to open it — *"Apple could not verify Video Trimmer is free of malware"*.
-
-Clear the flag on the receiving Mac:
-
-```sh
-xattr -dr com.apple.quarantine /Applications/"Video Trimmer.app"
-```
-
-Or open it once through **System Settings → Privacy & Security**, where an **Open Anyway** button
-appears after a blocked launch. Note that right-clicking the app and choosing **Open** no longer
-works: macOS 15 removed that bypass for apps without a Developer ID signature.
+`/Applications` shortcut to drag it onto. The app inside is ad-hoc signed and not notarized, so
+anyone who downloads the DMG through a browser has to clear the quarantine flag first — see
+[Manual install (DMG)](#manual-install-dmg).
 
 ## Support
 

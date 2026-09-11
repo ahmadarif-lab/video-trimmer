@@ -25,6 +25,7 @@ Sources/
   PlayerSurface.swift  AVPlayerLayer bridged into SwiftUI (no built-in chrome)
   Thumbnails.swift     Filmstrip thumbnail generation
   BrewManager.swift    ffmpeg install/update status via Homebrew
+  Updater.swift        App self-update: GitHub release check, Homebrew cask upgrade, relaunch
   InputMonitor.swift   App-level keyboard and scroll shortcuts
 Resources/
   Info.plist           Bundle metadata
@@ -41,6 +42,11 @@ the bundle by hand. Notes:
 
 - `-parse-as-library` is required because the entry point is `@main struct VideoTrimmerApp` in
   `App.swift` rather than top-level code in a `main.swift`.
+- `-target arm64-apple-macosx14.0` pins the deployment target. Without it swiftc targets whatever
+  macOS the build machine runs: 1.1.0, built on macOS 26, carried `minos 26.0` and would not launch
+  on anything older, while `Info.plist` and the cask still advertised 13. macOS 14 is the real floor
+  — the two-argument `onChange` in the add-segment popover is 14-only — so keep
+  `LSMinimumSystemVersion` and the cask's `depends_on macos:` in step with the flag.
 - Source file order in the compile command does not matter, but all files must be listed.
 - The bundle is ad-hoc signed (`codesign --sign -`). Good enough to run locally; not notarized, so a
   downloaded copy trips Gatekeeper.
@@ -76,6 +82,27 @@ logged no warning. Cutting segments as separate processes sidesteps it entirely.
 
 Progress comes from `-progress pipe:1 -nostats`, parsing the `out_time=` lines and scaling them
 against the total kept duration.
+
+## How app updates work
+
+`Updater` asks GitHub's `releases/latest` API for the newest release at launch, every six hours,
+and on click; a failed check retries after 15 minutes. The GitHub release is the source of truth,
+not the cask — so a release published before the tap's cask is bumped shows as available but
+can't be installed through Homebrew yet (the panel says so). Bump the cask right after publishing.
+
+Updating in place needs the running copy to be the cask's: a `Caskroom/video-trimmer` entry exists
+*and* the bundle is at `/Applications/Video Trimmer.app`, the path the cask's postflight hardcodes.
+Any other copy — a DMG install, a local build in `~/Applications` — gets the release page, because
+`brew upgrade` would replace a different bundle than the one running.
+
+- `brew update` runs before `brew upgrade --cask`: brew refreshes taps on its own only once every
+  24 hours, so the upgrade may not know about a fresh release yet.
+- brew exits 0 when there is nothing to upgrade ("Not upgrading video-trimmer, the latest version
+  is already installed"), so success is judged by the `Info.plist` now on disk, never the exit code.
+- The running process keeps its old binary after brew swaps the bundle, so the new version needs a
+  relaunch. That is a button, not automatic: relaunching mid-export would kill ffmpeg, and marked
+  segments are not saved anywhere. The relaunch is a `/bin/sh` loop that waits for this PID to exit
+  before `open`ing the bundle, so two copies never run side by side.
 
 ## Gotchas worth remembering
 

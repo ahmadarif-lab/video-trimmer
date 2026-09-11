@@ -23,6 +23,7 @@ struct ContentView: View {
     @StateObject private var engine = TrimEngine()
     @StateObject private var playerModel = PlayerModel()
     @StateObject private var brew = BrewManager()
+    @StateObject private var updater = Updater()
     @StateObject private var input = InputMonitor()
     @ObservedObject private var shortcuts = ShortcutsPresenter.shared
 
@@ -110,8 +111,19 @@ struct ContentView: View {
                 Image(systemName: "gearshape")
             }
             .buttonStyle(IconButtonStyle())
+            .overlay(alignment: .topTrailing) {
+                // A newer release is out; the dot stays until the app relaunches into it.
+                if updater.availableUpdate != nil {
+                    Circle()
+                        .fill(Theme.accent)
+                        .overlay(Circle().stroke(Theme.panel, lineWidth: 1.5))
+                        .frame(width: 8, height: 8)
+                        .offset(x: 2, y: -2)
+                        .allowsHitTesting(false)
+                }
+            }
             .popover(isPresented: $showSettings) { settingsPopover }
-            .help("FFmpeg settings")
+            .help(updater.availableUpdate.map { "Video Trimmer v\($0.version) is available" } ?? "Updates and ffmpeg")
 
             Button(action: pickFile) {
                 Label("Open Video", systemImage: "folder")
@@ -361,6 +373,10 @@ struct ContentView: View {
 
     private var settingsPopover: some View {
         VStack(alignment: .leading, spacing: 10) {
+            appUpdateSection
+
+            Divider().padding(.vertical, 2)
+
             Text("FFmpeg").font(.system(size: 12, weight: .semibold))
 
             if !brew.brewAvailable {
@@ -413,8 +429,6 @@ struct ContentView: View {
             Divider().padding(.vertical, 2)
 
             VStack(alignment: .leading, spacing: 3) {
-                Text("Video Trimmer \(appVersion)")
-                    .font(.system(size: 11, weight: .semibold))
                 Text("Ahmad Arif · ahmad.arif019@gmail.com")
                     .font(.system(size: 10)).foregroundColor(Theme.textSecondary)
                 Link("github.com/ahmadarif-lab/video-trimmer",
@@ -432,8 +446,57 @@ struct ContentView: View {
         .task { await brew.refreshStatus() }
     }
 
-    private var appVersion: String {
-        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+    /// The app's own version and updates: status at the trailing edge of the title row, the action
+    /// below it.
+    @ViewBuilder
+    private var appUpdateSection: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+            Text("Video Trimmer").font(.system(size: 12, weight: .semibold))
+            Text("v\(Updater.currentVersion)")
+                .font(.system(size: 10)).foregroundColor(Theme.textSecondary)
+            Spacer()
+            if let status = updateStatus {
+                Text(status.text).font(.system(size: 10)).foregroundColor(status.tint)
+            }
+        }
+
+        if updater.installedVersion != nil {
+            Button("Relaunch to Finish") { updater.relaunch() }
+                .buttonStyle(ToolbarButtonStyle(prominent: true))
+        } else if let release = updater.availableUpdate {
+            HStack(spacing: 10) {
+                Button(updater.installsWithHomebrew ? "Install Update" : "Download Update") {
+                    Task { await updater.update() }
+                }
+                .buttonStyle(ToolbarButtonStyle(prominent: true))
+                .disabled(updater.isUpdating)
+                .opacity(updater.isUpdating ? 0.5 : 1)
+
+                if updater.isUpdating {
+                    ProgressView().controlSize(.small)
+                } else {
+                    Link("What's new", destination: release.pageURL).font(.system(size: 11))
+                }
+            }
+        } else {
+            Button("Check for Updates") { Task { await updater.check() } }
+                .buttonStyle(ToolbarButtonStyle(disabled: updater.isChecking))
+                .disabled(updater.isChecking)
+        }
+
+        if let err = updater.errorMessage {
+            Text(err).font(.system(size: 10)).foregroundColor(Theme.danger)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private var updateStatus: (text: String, tint: Color)? {
+        if let step = updater.progressText { return (step, Theme.textSecondary) }
+        if let installed = updater.installedVersion { return ("v\(installed) installed", Theme.success) }
+        if let release = updater.availableUpdate { return ("v\(release.version) available", Theme.accent) }
+        if updater.isChecking { return ("Checking...", Theme.textSecondary) }
+        if updater.checkFailed { return ("Couldn't check", Theme.textSecondary) }
+        return updater.lastChecked == nil ? nil : ("Up to date", Theme.textSecondary)
     }
 
     private var addSegmentPopover: some View {

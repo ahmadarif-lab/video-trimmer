@@ -12,11 +12,15 @@ echo "Building $APP"
 
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 
+# Pin the deployment target: left out, swiftc targets the build machine's own macOS and the binary
+# refuses to launch on anything older. Keep it in step with LSMinimumSystemVersion and the cask.
 swiftc -parse-as-library -O \
+  -target arm64-apple-macosx14.0 \
   Sources/Theme.swift \
   Sources/Models.swift \
   Sources/Engine.swift \
   Sources/BrewManager.swift \
+  Sources/Updater.swift \
   Sources/InputMonitor.swift \
   Sources/PlayerModel.swift \
   Sources/Thumbnails.swift \
