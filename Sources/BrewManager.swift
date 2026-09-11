@@ -28,6 +28,10 @@ final class BrewManager: ObservableObject {
     @Published var isOutdated: Bool? = nil
     @Published var isBusy = false
     @Published var busyLabel = ""
+    /// True only while a command is streaming output into `logText` (install/update). A plain
+    /// status check like `checkForUpdate` sets `isBusy` too but never writes to the log, so the
+    /// log box stays hidden for it instead of showing an empty box.
+    @Published var isRunningCommand = false
     @Published var logText = ""
     @Published var errorMessage: String? = nil
 
@@ -65,6 +69,7 @@ final class BrewManager: ObservableObject {
     private func runBrew(args: [String], label: String) async {
         guard let brewPath else { return }
         isBusy = true
+        isRunningCommand = true
         busyLabel = label
         logText = ""
         errorMessage = nil
@@ -109,6 +114,7 @@ final class BrewManager: ObservableObject {
         }
 
         isBusy = false
+        isRunningCommand = false
         await refreshStatus()
         isOutdated = false
     }

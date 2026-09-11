@@ -385,14 +385,16 @@ struct ContentView: View {
                     .fixedSize(horizontal: false, vertical: true)
             } else if brew.isBusy {
                 busyRow(brew.busyLabel)
-                ScrollView {
-                    Text(brew.logText)
-                        .font(.system(size: 9, design: .monospaced))
-                        .foregroundColor(Theme.textSecondary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                if brew.isRunningCommand {
+                    ScrollView {
+                        Text(brew.logText)
+                            .font(.system(size: 9, design: .monospaced))
+                            .foregroundColor(Theme.textSecondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .frame(height: 110)
+                    .background(RoundedRectangle(cornerRadius: 6).fill(Theme.panelRaised))
                 }
-                .frame(height: 110)
-                .background(RoundedRectangle(cornerRadius: 6).fill(Theme.panelRaised))
             } else if !brew.ffmpegInstalled {
                 HStack(spacing: 6) {
                     Image(systemName: "exclamationmark.triangle.fill").foregroundColor(.orange)
